@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificateur de Répétition Espacée Mignon</title>
+    <!-- On charge Tailwind CSS depuis un CDN pour un style rapide et réactif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-pink-100 p-4 sm:p-8 flex items-center justify-center min-h-screen theme-rose">
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-lg">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-pink-800 mb-6 theme-text-primary">Planificateur de Répétition Espacée</h1>
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-pink-800 mb-6 theme-text-primary">ദ്ദി（• ˕ •マ.ᐟ</h1>
+        <p class="text-sm text-center text-pink-500 mb-6 theme-text-secondary">
+            Votre petit ami à quatre pattes pour ne rien oublier !
+        </p>
+
+        <!-- Formulaire pour ajouter un nouveau cours -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input type="text" id="course-input" placeholder="Ajoutez un cours à réviser..."
+                       class="flex-grow p-3 rounded-lg border border-pink-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300 theme-input-border theme-input-ring">
+                <button id="add-btn"
+                        class="w-full sm:w-auto px-6 py-3 bg-pink-600 text-white font-semibold rounded-lg shadow-md hover:bg-pink-700 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out theme-btn-primary">
+                    Ajouter le cours 🐾
+                </button>
+            </div>
+            <div id="error-message" class="text-red-500 text-sm mt-2 hidden">Miaou, le nom du cours ne peut pas être vide !</div>
+        </div>
+        
+        <!-- Options d'import/export -->
+        <div class="flex flex-col sm:flex-row justify-between gap-2 mb-8">
+            <button id="export-btn" class="w-full sm:w-auto px-3 py-1 bg-pink-200 text-pink-700 text-xs font-semibold rounded-lg shadow-md hover:bg-pink-300 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out theme-btn-secondary">
+                Exporter les données 💾
+            </button>
+            <input type="file" id="import-file" class="hidden" accept=".json">
+            <button id="import-btn" class="w-full sm:w-auto px-3 py-1 bg-pink-200 text-pink-700 text-xs font-semibold rounded-lg shadow-md hover:bg-pink-300 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out theme-btn-secondary">
+                Importer les données 📥
+            </button>
+        </div>
+
+        <!-- Liste des cours à réviser aujourd'hui -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold text-pink-700 mb-4 theme-heading">À réviser aujourd'hui ✨</h2>
+            <div id="today-list" class="space-y-3">
+                <!-- Les cours à réviser seront insérés ici par JavaScript -->
+            </div>
+            <p id="no-today-courses" class="text-gray-500 text-center mt-4 hidden">Rien à réviser pour le moment. Félicitations ! 🎉</p>
+        </div>
+
+        <!-- Liste des cours à venir -->
+        <div>
+            <h2 class="text-2xl font-semibold text-pink-700 mb-4 theme-heading">À venir ⏳</h2>
+            <div id="upcoming-list" class="space-y-3">
+                <!-- Les cours à venir seront insérés ici par JavaScript -->
+            </div>
+            <p id="no-upcoming-courses" class="text-gray-500 text-center mt-4 hidden">Miaou ! Ajoutez vos premiers cours pour commencer.</p>
+        </div>
+        
+        <!-- Bouton pour tout effacer -->
+        <div class="mt-8 text-center">
+            <button id="clear-all-btn" class="px-3 py-1 bg-red-400 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-red-500 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out">
+                Tout effacer 🧹
+            </button>
+        </div>
+
+        <!-- Boutons de changement de thème -->
+        <div class="mt-8 flex justify-center gap-4">
+            <button id="theme-blue-btn" class="px-3 py-1 bg-blue-400 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-blue-500 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out">
+                Thème Bleu 🌊
+            </button>
+            <button id="theme-rose-btn" class="px-3 py-1 bg-pink-400 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-pink-500 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out">
+                Thème Rose 💖
+            </button>
+        </div>
+
+        <!-- Boîte de dialogue de confirmation pour l'importation -->
+        <div id="confirm-dialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Confirmer l'importation</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">L'importation remplacera toutes vos données actuelles. Êtes-vous sûr de vouloir continuer ?</p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="confirm-ok" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            Oui, importer
+                        </button>
+                        <button id="confirm-cancel" class="mt-2 px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boîte de dialogue de confirmation pour "Tout effacer" -->
+        <div id="clear-confirm-dialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Confirmer la suppression</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">Cette action est irréversible et effacera tous vos cours. Êtes-vous sûr de vouloir continuer ?</p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="clear-confirm-ok" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            Oui, effacer
+                        </button>
+                        <button id="clear-confirm-cancel" class="mt-2 px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boîte de dialogue pour les messages généraux -->
+        <div id="message-dialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="message-title"></h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500" id="message-text"></p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="message-ok" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // La clé de stockage dans le navigateur
+        const STORAGE_KEY = 'spaced_repetition_courses';
+        // Les intervalles de répétition en jours, basés sur la courbe de l'oubli
+        const INTERVALS = [1, 3, 7, 14, 30, 60, 90]; // Vous pouvez ajuster ces valeurs
+
+        // Récupération des éléments du DOM
+        const courseInput = document.getElementById('course-input');
+        const addBtn = document.getElementById('add-btn');
+        const todayList = document.getElementById('today-list');
+        const upcomingList = document.getElementById('upcoming-list');
+        const errorMessage = document.getElementById('error-message');
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const importFile = document.getElementById('import-file');
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmOk = document.getElementById('confirm-ok');
+        const confirmCancel = document.getElementById('confirm-cancel');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const clearConfirmDialog = document.getElementById('clear-confirm-dialog');
+        const clearConfirmOk = document.getElementById('clear-confirm-ok');
+        const clearConfirmCancel = document.getElementById('clear-confirm-cancel');
+        const messageDialog = document.getElementById('message-dialog');
+        const messageTitle = document.getElementById('message-title');
+        const messageText = document.getElementById('message-text');
+        const messageOk = document.getElementById('message-ok');
+        const themeBlueBtn = document.getElementById('theme-blue-btn');
+        const themeRoseBtn = document.getElementById('theme-rose-btn');
+
+        // Définition des classes pour les thèmes
+        const themes = {
+            rose: {
+                body: 'bg-pink-100',
+                h1: 'text-pink-800',
+                p: 'text-pink-500',
+                inputBorder: 'border-pink-300',
+                inputRing: 'focus:ring-pink-500',
+                btnPrimary: 'bg-pink-600 hover:bg-pink-700',
+                btnSecondary: 'bg-pink-200 text-pink-700 hover:bg-pink-300',
+                h2: 'text-pink-700',
+                liBg: 'bg-pink-50',
+                commentText: 'text-pink-600',
+                commentBg: 'bg-pink-100',
+            },
+            blue: {
+                body: 'bg-blue-100',
+                h1: 'text-blue-800',
+                p: 'text-blue-500',
+                inputBorder: 'border-blue-300',
+                inputRing: 'focus:ring-blue-500',
+                btnPrimary: 'bg-blue-600 hover:bg-blue-700',
+                btnSecondary: 'bg-blue-200 text-blue-700 hover:bg-blue-300',
+                h2: 'text-blue-700',
+                liBg: 'bg-blue-50',
+                commentText: 'text-blue-600',
+                commentBg: 'bg-blue-100',
+            }
+        };
+
+        /**
+         * Applique le thème sélectionné.
+         * @param {string} themeName Le nom du thème ('rose' ou 'blue').
+         */
+        function applyTheme(themeName) {
+            const currentTheme = themes[themeName];
+            
+            // On retire toutes les classes des deux thèmes
+            Object.values(themes).forEach(theme => {
+                document.body.classList.remove(theme.body);
+                // On met à jour tous les h1 pour qu'ils changent de couleur
+                document.querySelectorAll('h1').forEach(el => el.classList.remove(theme.h1));
+                document.querySelector('.theme-text-secondary').classList.remove(theme.p);
+                courseInput.classList.remove(theme.inputBorder, theme.inputRing);
+                addBtn.classList.remove(...themes.rose.btnPrimary.split(' '), ...themes.blue.btnPrimary.split(' '));
+                exportBtn.classList.remove(...themes.rose.btnSecondary.split(' '), ...themes.blue.btnSecondary.split(' '));
+                importBtn.classList.remove(...themes.rose.btnSecondary.split(' '), ...themes.blue.btnSecondary.split(' '));
+            });
+            
+            // On ajoute les nouvelles classes du thème sélectionné
+            document.body.classList.add(currentTheme.body);
+            // On met à jour tous les h1 pour qu'ils changent de couleur
+            document.querySelectorAll('h1').forEach(el => el.classList.add(currentTheme.h1));
+            document.querySelector('.theme-text-secondary').classList.add(currentTheme.p);
+            courseInput.classList.add(currentTheme.inputBorder, currentTheme.inputRing);
+            addBtn.classList.add(...currentTheme.btnPrimary.split(' '));
+            exportBtn.classList.add(...currentTheme.btnSecondary.split(' '));
+            importBtn.classList.add(...currentTheme.btnSecondary.split(' '));
+
+            // On met à jour les classes pour les éléments dynamiques
+            document.querySelectorAll('.theme-heading').forEach(el => {
+                Object.values(themes).forEach(t => el.classList.remove(t.h2));
+                el.classList.add(currentTheme.h2);
+            });
+            
+            // Sauvegarde le thème dans localStorage
+            localStorage.setItem('theme', themeName);
+            
+            renderCourses();
+        }
+
+        // Écouteurs d'événements pour les boutons de thème
+        themeBlueBtn.addEventListener('click', () => applyTheme('blue'));
+        themeRoseBtn.addEventListener('click', () => applyTheme('rose'));
+
+        /**
+         * Affiche une boîte de dialogue personnalisée.
+         * @param {string} title Le titre du message.
+         * @param {string} text Le texte du message.
+         */
+        function showMessage(title, text) {
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            messageDialog.classList.remove('hidden');
+        }
+
+        messageOk.addEventListener('click', () => {
+            messageDialog.classList.add('hidden');
+        });
+
+        /**
+         * Charge les cours depuis le localStorage.
+         * @returns {Array} Une liste de cours.
+         */
+        function getCourses() {
+            try {
+                const courses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+                // S'assurer que les objets ont bien les propriétés attendues, en ajoutant 'comment'
+                return courses.map(course => ({
+                    name: course.name,
+                    nextReviewDate: new Date(course.nextReviewDate),
+                    repetitionCount: course.repetitionCount || 0,
+                    comment: course.comment || '' // Nouvelle propriété pour les commentaires
+                }));
+            } catch (error) {
+                console.error("Erreur lors de la lecture des données du localStorage :", error);
+                // En cas d'erreur de parsing, on retourne un tableau vide pour éviter de bloquer l'app
+                return [];
+            }
+        }
+
+        /**
+         * Sauvegarde les cours dans le localStorage.
+         * @param {Array} courses La liste de cours à sauvegarder.
+         */
+        function saveCourses(courses) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+        }
+
+        /**
+         * Ajoute une date en jours à une date donnée.
+         * @param {Date} date La date de départ.
+         * @param {number} days Le nombre de jours à ajouter.
+         * @returns {Date} La nouvelle date.
+         */
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        /**
+         * Affiche les cours dans les listes appropriées (aujourd'hui ou à venir).
+         */
+        function renderCourses() {
+            const courses = getCourses();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // On vide les listes
+            todayList.innerHTML = '';
+            upcomingList.innerHTML = '';
+
+            const todayCourses = courses.filter(course => course.nextReviewDate <= today);
+            const upcomingCourses = courses.filter(course => course.nextReviewDate > today).sort((a, b) => a.nextReviewDate - b.nextReviewDate);
+
+            // Affichage des messages si les listes sont vides
+            document.getElementById('no-today-courses').classList.toggle('hidden', todayCourses.length > 0);
+            document.getElementById('no-upcoming-courses').classList.toggle('hidden', courses.length > 0);
+            
+            // Rendu des cours à réviser aujourd'hui
+            if (todayCourses.length > 0) {
+                todayCourses.forEach(course => {
+                    const listItem = createCourseListItem(course, 'today');
+                    todayList.appendChild(listItem);
+                });
+            }
+
+            // Rendu des cours à venir
+            if (upcomingCourses.length > 0) {
+                upcomingCourses.forEach(course => {
+                    const listItem = createCourseListItem(course, 'upcoming');
+                    upcomingList.appendChild(listItem);
+                });
+            }
+        }
+
+        /**
+         * Crée un élément de liste pour un cours.
+         * @param {Object} course Le cours à afficher.
+         * @param {string} listType Le type de liste ('today' ou 'upcoming').
+         * @returns {HTMLElement} L'élément de liste créé.
+         */
+        function createCourseListItem(course, listType) {
+            const li = document.createElement('div');
+            const currentTheme = themes[localStorage.getItem('theme') || 'rose'];
+            li.className = `p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm ${currentTheme.liBg}`;
+            
+            const content = document.createElement('div');
+            content.className = 'flex-grow';
+            
+            const reviewDate = course.nextReviewDate.toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Container pour le nom du cours et les boutons
+            const nameContainer = document.createElement('div');
+            nameContainer.className = 'flex items-center space-x-2';
+            const courseNameDisplay = document.createElement('div');
+            courseNameDisplay.className = 'font-medium text-gray-800';
+            courseNameDisplay.textContent = course.name;
+            nameContainer.appendChild(courseNameDisplay);
+
+            // Bouton pour modifier le nom du cours
+            const editNameBtn = document.createElement('button');
+            editNameBtn.innerHTML = `<span class="text-xl">✍️</span>`;
+            editNameBtn.className = `p-1 rounded-full transition-colors hover:scale-110 active:scale-95 duration-200 ease-in-out hover:${currentTheme.btnSecondary.split(' ')[0]}`;
+            editNameBtn.title = 'Modifier le nom du cours';
+            nameContainer.appendChild(editNameBtn);
+            
+            content.appendChild(nameContainer);
+
+            // Champ de modification du nom (initialement caché)
+            const nameEditForm = document.createElement('div');
+            nameEditForm.className = 'flex items-center space-x-2 hidden';
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = `flex-grow p-1 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-${currentTheme.inputRing.split('-')[2]} focus:border-transparent transition-all duration-300`;
+            nameEditForm.appendChild(nameInput);
+            const saveNameBtn = document.createElement('button');
+            saveNameBtn.textContent = 'Sauvegarder';
+            saveNameBtn.className = `px-2 py-1 text-white text-xs font-semibold rounded-lg hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out ${currentTheme.btnPrimary}`;
+            nameEditForm.appendChild(saveNameBtn);
+            content.appendChild(nameEditForm);
+
+            // Logique de modification du nom
+            editNameBtn.onclick = () => {
+                nameInput.value = course.name;
+                nameContainer.classList.add('hidden');
+                nameEditForm.classList.remove('hidden');
+            };
+
+            saveNameBtn.onclick = () => {
+                const newName = nameInput.value.trim();
+                if (newName && newName !== course.name) {
+                    updateCourseName(course.name, newName);
+                }
+                nameContainer.classList.remove('hidden');
+                nameEditForm.classList.add('hidden');
+                renderCourses();
+            };
+
+            const reviewDateDisplay = document.createElement('div');
+            reviewDateDisplay.className = 'text-sm text-gray-500 mb-2 sm:mb-0';
+            reviewDateDisplay.innerHTML = `Prochaine révision : <span class="font-semibold">${reviewDate}</span>`;
+            content.appendChild(reviewDateDisplay);
+
+            // Affichage du commentaire s'il existe
+            const commentDisplay = document.createElement('div');
+            if (course.comment) {
+                commentDisplay.className = `text-xs italic mt-2 p-2 rounded-lg ${currentTheme.commentText} ${currentTheme.commentBg}`;
+                commentDisplay.textContent = course.comment;
+            }
+            content.appendChild(commentDisplay);
+
+            li.appendChild(content);
+
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'flex flex-row space-x-2 mt-4 sm:mt-0';
+
+            // Bouton pour ajouter/modifier un commentaire
+            const commentBtn = document.createElement('button');
+            commentBtn.innerHTML = `<span class="text-xl">📝</span>`;
+            commentBtn.className = `p-2 rounded-lg transition-colors hover:scale-110 active:scale-95 duration-200 ease-in-out hover:${currentTheme.btnSecondary.split(' ')[0]}`;
+            commentBtn.title = 'Ajouter/modifier un commentaire';
+            actionsContainer.appendChild(commentBtn);
+
+            // Bouton pour supprimer le cours
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = `<span class="text-xl">🗑️</span>`;
+            deleteBtn.className = `p-2 rounded-lg transition-colors hover:scale-110 active:scale-95 duration-200 ease-in-out hover:${currentTheme.btnSecondary.split(' ')[0]}`;
+            deleteBtn.title = 'Supprimer ce cours';
+            deleteBtn.onclick = () => deleteCourse(course.name);
+            actionsContainer.appendChild(deleteBtn);
+
+            // Création de la zone de commentaire (initialement masquée)
+            const commentEditor = document.createElement('div');
+            commentEditor.className = `w-full mt-4 p-4 rounded-lg hidden ${currentTheme.commentBg}`;
+            commentEditor.innerHTML = `
+                <textarea class="w-full h-24 p-2 rounded-lg border border-gray-300 resize-none focus:ring-2 focus:ring-${currentTheme.inputRing.split('-')[2]} focus:border-transparent transition-all duration-300" placeholder="Écrivez votre commentaire ici..."></textarea>
+                <div class="flex justify-end mt-2">
+                    <button class="save-comment-btn px-4 py-2 text-white text-sm font-semibold rounded-lg hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out ${currentTheme.btnPrimary}">Sauvegarder</button>
+                </div>
+            `;
+            
+            li.appendChild(actionsContainer);
+            li.appendChild(commentEditor);
+
+            // Gestion de l'affichage de la zone de commentaire
+            commentBtn.onclick = () => {
+                const textarea = commentEditor.querySelector('textarea');
+                textarea.value = course.comment;
+                commentEditor.classList.toggle('hidden');
+            };
+
+            // Gestion de la sauvegarde du commentaire
+            commentEditor.querySelector('.save-comment-btn').onclick = () => {
+                const newComment = commentEditor.querySelector('textarea').value.trim();
+                saveComment(course.name, newComment);
+                commentEditor.classList.add('hidden');
+                renderCourses(); // Re-render pour mettre à jour l'affichage
+            };
+
+            if (listType === 'today') {
+                const reviewBtn = document.createElement('button');
+                reviewBtn.textContent = 'J\'ai révisé';
+                reviewBtn.className = 'px-4 py-2 bg-green-400 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-green-500 hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out shrink-0';
+                reviewBtn.onclick = () => markCourseAsReviewed(course.name);
+                actionsContainer.appendChild(reviewBtn);
+            }
+
+            return li;
+        }
+
+        /**
+         * Gère l'ajout d'un nouveau cours.
+         */
+        addBtn.addEventListener('click', () => {
+            const courseName = courseInput.value.trim();
+            if (courseName === '') {
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            errorMessage.classList.add('hidden');
+
+            const courses = getCourses();
+            // On vérifie si le cours existe déjà pour éviter les doublons
+            const courseExists = courses.some(course => course.name.toLowerCase() === courseName.toLowerCase());
+            if (courseExists) {
+                // Affichez un message d'erreur ou ignorez la demande
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const newCourse = {
+                name: courseName,
+                nextReviewDate: addDays(today, 1), // Première révision dans 1 jour
+                repetitionCount: 0,
+                comment: '' // Initialisation du commentaire
+            };
+            courses.push(newCourse);
+            saveCourses(courses);
+            courseInput.value = '';
+            renderCourses();
+        });
+
+        /**
+         * Marque un cours comme révisé et met à jour sa prochaine date de révision.
+         * @param {string} courseName Le nom du cours révisé.
+         */
+        function markCourseAsReviewed(courseName) {
+            const courses = getCourses();
+            const updatedCourses = courses.map(course => {
+                if (course.name === courseName) {
+                    const nextRepetitionCount = course.repetitionCount + 1;
+                    const nextIntervalIndex = Math.min(nextRepetitionCount, INTERVALS.length - 1);
+                    const daysToAdd = INTERVALS[nextIntervalIndex];
+
+                    return {
+                        ...course,
+                        nextReviewDate: addDays(new Date(), daysToAdd),
+                        repetitionCount: nextRepetitionCount
+                    };
+                }
+                return course;
+            });
+            saveCourses(updatedCourses);
+            renderCourses();
+        }
+
+        /**
+         * Sauvegarde le commentaire pour un cours spécifique.
+         * @param {string} courseName Le nom du cours.
+         * @param {string} comment Le commentaire à sauvegarder.
+         */
+        function saveComment(courseName, comment) {
+            const courses = getCourses();
+            const updatedCourses = courses.map(course => {
+                if (course.name === courseName) {
+                    return {
+                        ...course,
+                        comment: comment
+                    };
+                }
+                return course;
+            });
+            saveCourses(updatedCourses);
+        }
+
+        /**
+         * Met à jour le nom d'un cours spécifique.
+         * @param {string} oldName L'ancien nom du cours.
+         * @param {string} newName Le nouveau nom à sauvegarder.
+         */
+        function updateCourseName(oldName, newName) {
+            const courses = getCourses();
+            const updatedCourses = courses.map(course => {
+                if (course.name === oldName) {
+                    return {
+                        ...course,
+                        name: newName
+                    };
+                }
+                return course;
+            });
+            saveCourses(updatedCourses);
+        }
+
+        /**
+         * Supprime un cours de la liste.
+         * @param {string} courseName Le nom du cours à supprimer.
+         */
+        function deleteCourse(courseName) {
+            const courses = getCourses();
+            const updatedCourses = courses.filter(course => course.name !== courseName);
+            saveCourses(updatedCourses);
+            renderCourses();
+        }
+
+        /**
+         * Exporte les données des cours vers un fichier JSON.
+         */
+        exportBtn.addEventListener('click', () => {
+            const courses = getCourses();
+            const dataStr = JSON.stringify(courses);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = 'cours_repetition_espaccee.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        });
+
+        /**
+         * Importe les données des cours depuis un fichier JSON.
+         */
+        importBtn.addEventListener('click', () => {
+            confirmDialog.classList.remove('hidden');
+        });
+
+        confirmOk.addEventListener('click', () => {
+            importFile.click();
+            confirmDialog.classList.add('hidden');
+        });
+
+        confirmCancel.addEventListener('click', () => {
+            confirmDialog.classList.add('hidden');
+        });
+
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedCourses = JSON.parse(e.target.result);
+                    // On peut ajouter une validation simple ici pour s'assurer que le fichier est valide
+                    if (Array.isArray(importedCourses)) {
+                        saveCourses(importedCourses);
+                        renderCourses();
+                        showMessage('Succès', 'Données importées avec succès !');
+                    } else {
+                        showMessage('Erreur', 'Format de fichier invalide.');
+                    }
+                } catch (error) {
+                    showMessage('Erreur', 'Erreur lors de la lecture du fichier : ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        /**
+         * Efface toutes les données de cours.
+         */
+        clearAllBtn.addEventListener('click', () => {
+            clearConfirmDialog.classList.remove('hidden');
+        });
+
+        clearConfirmOk.addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEY);
+            renderCourses();
+            clearConfirmDialog.classList.add('hidden');
+            showMessage('Succès', 'Toutes les données ont été effacées.');
+        });
+
+        clearConfirmCancel.addEventListener('click', () => {
+            clearConfirmDialog.classList.add('hidden');
+        });
+
+        // Fonction pour initialiser le thème au chargement de la page
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'rose';
+            applyTheme(savedTheme);
+        }
+
+        // On lance la fonction au chargement de la page pour afficher les cours existants
+        window.onload = () => {
+            initializeTheme();
+            renderCourses();
+        };
+
+    </script>
+</body>
+</html>
